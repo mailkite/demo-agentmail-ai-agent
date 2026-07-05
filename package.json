@@ -1,0 +1,22 @@
+{
+  "name": "demo-agentmail-ai-agent",
+  "version": "1.0.0",
+  "description": "The AgentMail alternative for AI agents — MailKite's receive → verify → think → reply loop, both ways, end to end",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node demo.mjs",
+    "dev": "node demo.mjs",
+    "serve": "node server.mjs",
+    "test": "NODE_ENV=test node --test",
+    "fire-sample-event": "node fire-sample-event.mjs",
+    "route-demo": "node managed-route.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mailkite": "^0.13.0"
+  }
+}

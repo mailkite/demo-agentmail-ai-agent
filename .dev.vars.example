@@ -1,0 +1,4 @@
+# Copy to .dev.vars and fill in. Both are optional for the demo:
+# with neither set, server.mjs runs the loop and dry-runs the reply.
+MAILKITE_API_KEY=
+MAILKITE_WEBHOOK_SECRET=

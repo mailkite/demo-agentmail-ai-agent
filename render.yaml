@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: demo-agentmail-ai-agent
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.mjs
+    envVars:
+      - key: MAILKITE_API_KEY
+        sync: false
+      - key: MAILKITE_WEBHOOK_SECRET
+        sync: false

@@ -1,0 +1,6 @@
+{
+  "name": "demo-agentmail-ai-agent",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [3000],
+  "postCreateCommand": "npm install"
+}
