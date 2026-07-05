@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { MailKite } from "mailkite";
 import { verifySignature } from "./raw-server.mjs";
-import { inboxAddress, authVerdict } from "./agentmail-contrast/handler.mjs";
+import { authVerdict, authSignalFromEventType } from "./agentmail-contrast/handler.mjs";
 
 const SECRET = "whsec_test";
 const body = JSON.stringify({ type: "email.received" });
@@ -41,33 +41,36 @@ test("SDK and raw implementations agree on a fresh valid signature", () => {
 });
 
 // ── The AgentMail contrast, made concrete ────────────────────────────────────
-// AgentMail is a direct peer that also gives agents inboxes; these two tests pin down
-// the two HONEST differences the post argues (agentmail-contrast/handler.mjs), neither a
-// knock on its code: (1) the default inbox is on the shared agentmail.to domain, an
-// own-domain inbox being a paid-plan feature; (2) the documented message.received event
-// carries no normalized auth verdict, where MailKite's event.auth is always a field.
+// AgentMail is a direct peer that also gives agents inboxes and does evaluate sender
+// authentication; these two tests pin down the one HONEST, verifiable shape difference the
+// post argues (agentmail-contrast/handler.mjs): AgentMail surfaces the auth signal as a
+// separate EVENT TYPE (message.received.unauthenticated / .spam / .blocked), not as a
+// normalized SPF/DKIM/DMARC verdict inline on the plain message.received payload — where
+// MailKite's event.auth is always a field on every event.
 
-test("AgentMail: the default inbox lives on the shared agentmail.to domain, not one you own", () => {
-  // create() with no domain (Free tier) → an address on agentmail.to. An inbox on your
-  // OWN domain is a paid-plan feature. On MailKite an own-domain inbox is the baseline,
-  // free and unlimited — that's the address in sample-event.mjs (agent@yourco.dev).
-  assert.equal(inboxAddress({ username: "support-agent" }), "support-agent@agentmail.to");
-  assert.equal(inboxAddress({ username: "support-agent", domain: "yourco.dev" }), "support-agent@yourco.dev");
+test("AgentMail: the auth signal is the event TYPE, not a field on the message", () => {
+  // AgentMail routes authentication as a suffix on the event name — you subscribe to (and
+  // are permissioned for) these extra events and branch on the type, rather than reading a
+  // per-message verdict. A plain message.received is just "unflagged".
+  assert.equal(authSignalFromEventType("message.received"), "unflagged");
+  assert.equal(authSignalFromEventType("message.received.unauthenticated"), "unauthenticated");
+  assert.equal(authSignalFromEventType("message.received.spam"), "spam");
+  assert.equal(authSignalFromEventType("message.received.blocked"), "blocked");
 });
 
-test("AgentMail: the documented message.received event carries no normalized auth verdict", () => {
-  // A message shaped like AgentMail's documented event: from/to/subject/text/html — no
-  // auth field, so an agent has nothing to weight the sender by out of the box.
+test("AgentMail: the plain message.received payload carries no normalized auth verdict field", () => {
+  // A message shaped like AgentMail's documented event: from/to/subject/text/html (body
+  // inline) — but no per-message auth field, so trust comes from the event type, not here.
   const agentMailMessage = {
     from: "ada@example.com",
     subject: "Re: invoice #1042",
     text: "Looks good — approved!",
     html: "<p>Looks good — approved!</p>",
   };
-  assert.equal(authVerdict(agentMailMessage), null); // nothing to read
+  assert.equal(authVerdict(agentMailMessage), null); // no auth field on the payload itself
 
-  // The SAME accessor over a MailKite email.received event finds a normalized verdict —
-  // the field server.mjs reads to weight a sender. This is the difference, in one assert.
+  // The SAME accessor over a MailKite email.received event finds a normalized verdict inline —
+  // the field server.mjs reads to weight every sender, no extra event subscription needed.
   const mailkiteEvent = { auth: { spf: "pass", dkim: "pass", dmarc: "pass", spam: "ham" } };
   assert.deepEqual(authVerdict(mailkiteEvent), { spf: "pass", dkim: "pass", dmarc: "pass", spam: "ham" });
 });

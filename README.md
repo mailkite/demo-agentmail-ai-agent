@@ -56,23 +56,26 @@ of dry-running it. Tamper with the body or the secret and the server answers `40
 
 [`agentmail-contrast/handler.mjs`](./agentmail-contrast/handler.mjs) is a faithful, fair
 sketch of the AgentMail inbound path: create an inbox in one call, receive a
-`message.received` event, run the agent, and reply from the same inbox. AgentMail is a
-legitimate peer and the code is clean — this isn't a "can't." The file pins the two honest
-differences the post argues, neither a knock on AgentMail's code. `npm test` makes them
-concrete:
+`message.received` event (body inline), run the agent, and reply from the same inbox.
+AgentMail is a legitimate peer and the code is clean — this isn't a "can't," and it *does*
+evaluate sender authentication. The file pins the one honest, verifiable shape difference
+the post argues. `npm test` makes it concrete:
 
 ```
-✔ AgentMail: the default inbox lives on the shared agentmail.to domain, not one you own
-✔ AgentMail: the documented message.received event carries no normalized auth verdict
+✔ AgentMail: the auth signal is the event TYPE, not a field on the message
+✔ AgentMail: the plain message.received payload carries no normalized auth verdict field
 ```
 
-The first test shows the default inbox address is `something@agentmail.to` — an own-domain
-inbox is a paid-plan feature (Developer, $20/mo+), where on MailKite an inbox on a domain
-you own is the baseline, free and unlimited. The second runs the *same* `authVerdict()`
-accessor over both payloads: on AgentMail's documented `message.received` event it returns
-`null` (there's no normalized SPF/DKIM/DMARC field to weight a sender by), and on a
-MailKite `email.received` event it returns the `auth` block — the field
-[`server.mjs`](./server.mjs) reads without ever opening a header.
+AgentMail surfaces authentication as a suffix on the event **name** —
+`message.received.unauthenticated`, `message.received.spam`, `message.received.blocked` —
+which you subscribe to and are permissioned for, then branch on the type. The plain
+`message.received` payload carries no per-message SPF/DKIM/DMARC verdict, so the second test
+runs the *same* `authVerdict()` accessor over both payloads: on AgentMail's documented
+`message.received` it returns `null`, and on a MailKite `email.received` event it returns
+the inline `auth` block — the field [`server.mjs`](./server.mjs) reads to weight every
+sender without an extra event subscription. (AgentMail's default inbox is on the shared
+`agentmail.to` domain; you can add your own via DNS. MailKite is domain-first — an
+own-domain inbox is the baseline. Check each pricing page for current plan details.)
 
 `npm test` also runs the five webhook-signature cases (valid, wrong secret, tampered
 body, replayed timestamp, malformed header) plus an SDK/raw parity check.
