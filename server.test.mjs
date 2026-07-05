@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { MailKite } from "mailkite";
 import { verifySignature } from "./raw-server.mjs";
-import { authVerdict, authSignalFromEventType } from "./agentmail-contrast/handler.mjs";
+import { inboxAddress, authVerdict, authSignalFromEventType } from "./agentmail-contrast/handler.mjs";
 
 const SECRET = "whsec_test";
 const body = JSON.stringify({ type: "email.received" });
@@ -47,6 +47,14 @@ test("SDK and raw implementations agree on a fresh valid signature", () => {
 // separate EVENT TYPE (message.received.unauthenticated / .spam / .blocked), not as a
 // normalized SPF/DKIM/DMARC verdict inline on the plain message.received payload — where
 // MailKite's event.auth is always a field on every event.
+
+test("AgentMail: the default inbox is on the shared agentmail.to domain (own-domain is a paid plan)", () => {
+  // No domain → an address on agentmail.to. An own-domain inbox is a paid-plan feature
+  // (Free includes 0 custom domains; Developer $20/mo adds 10). On MailKite an own-domain
+  // inbox is the baseline — that's the address in sample-event.mjs (agent@yourco.dev).
+  assert.equal(inboxAddress({ username: "support-agent" }), "support-agent@agentmail.to");
+  assert.equal(inboxAddress({ username: "support-agent", domain: "yourco.dev" }), "support-agent@yourco.dev");
+});
 
 test("AgentMail: the auth signal is the event TYPE, not a field on the message", () => {
   // AgentMail routes authentication as a suffix on the event name — you subscribe to (and

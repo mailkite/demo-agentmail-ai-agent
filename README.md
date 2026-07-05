@@ -58,15 +58,20 @@ of dry-running it. Tamper with the body or the secret and the server answers `40
 sketch of the AgentMail inbound path: create an inbox in one call, receive a
 `message.received` event (body inline), run the agent, and reply from the same inbox.
 AgentMail is a legitimate peer and the code is clean — this isn't a "can't," and it *does*
-evaluate sender authentication. The file pins the one honest, verifiable shape difference
-the post argues. `npm test` makes it concrete:
+evaluate sender authentication. The file pins the honest, verifiable shape differences the
+post argues. `npm test` makes them concrete:
 
 ```
+✔ AgentMail: the default inbox is on the shared agentmail.to domain (own-domain is a paid plan)
 ✔ AgentMail: the auth signal is the event TYPE, not a field on the message
 ✔ AgentMail: the plain message.received payload carries no normalized auth verdict field
 ```
 
-AgentMail surfaces authentication as a suffix on the event **name** —
+The first is a verified fact: AgentMail's default inbox is on the shared `agentmail.to`
+domain, and an own-domain inbox is a paid-plan feature (the Free tier includes 0 custom
+domains; Developer at $20/mo adds 10 — per agentmail.to/pricing). MailKite is domain-first,
+so an own-domain inbox is the baseline. On authentication, AgentMail surfaces it as a suffix
+on the event **name** —
 `message.received.unauthenticated`, `message.received.spam`, `message.received.blocked` —
 which you subscribe to and are permissioned for, then branch on the type. The plain
 `message.received` payload carries no per-message SPF/DKIM/DMARC verdict, so the second test

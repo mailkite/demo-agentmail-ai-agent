@@ -20,6 +20,18 @@
 // your own domain via DNS. MailKite is domain-first — an inbox on a domain you own is the
 // baseline. Confirm current plan details on each pricing page before you rely on them.)
 
+// AgentMail creates an inbox in one call: client.inboxes.create({ clientId }). With no
+// domain the address is on the SHARED agentmail.to domain; an inbox on your OWN domain is a
+// paid-plan feature — the Free tier (3 inboxes, 3,000 emails) includes 0 custom domains;
+// custom domains start on Developer ($20/mo, 10 domains) and scale to Startup ($200/mo, 150).
+// (Verified against agentmail.to/pricing; confirm current numbers before you rely on them.)
+// On MailKite an inbox on a domain you own is the baseline — free, unlimited. This returns
+// the address AgentMail assigns for a given inbox.
+export function inboxAddress({ username = "support-agent", domain } = {}) {
+  // `domain` is only set on a paid custom-domain inbox; the default is the shared domain.
+  return `${username}@${domain ?? "agentmail.to"}`;
+}
+
 // AgentMail's documented webhook event types, for reference. Authentication shows up as a
 // SUFFIX on the event name, not as a field on the payload.
 export const AGENTMAIL_EVENT_TYPES = [
